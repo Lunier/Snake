@@ -307,7 +307,6 @@ func movePlayer(direction i32)(){
 
 	var lastElement stuff.Position2D = tempCell.position
 
-	
 	lastElement.realY = pos.realY
 	lastElement.realX = pos.realX
 
@@ -329,6 +328,22 @@ func movePlayer(direction i32)(){
 	tempCellArr[max] = tempCell
 	player.body = tempCellArr
 
+	switchBodyElements()
+
+}
+
+func switchBodyElements()(){
+	var i i32
+	var max i32 = i32.sub(player.size,0)
+	var tempCellArr [99]stuff.Cell = player.body
+	for i=0; i< max; i++
+	{
+		var temp stuff.Cell
+		temp = 	tempCellArr[i]
+		tempCellArr[i] = tempCellArr[i32.add(i,1)]
+		tempCellArr[i32.add(i,1)] = temp
+	}
+	player.body = tempCellArr
 }
 
 func checkForFood()(){
