@@ -1,0 +1,122 @@
+package stuff
+
+type Position2D struct {
+    x f32
+    y f32
+    realX i32
+    realY i32
+}
+
+func newPosition2D (xPos f32, yPos f32,rxPos i32, ryPos i32) (position Position2D) {
+    var position Position2D
+    position = Position2D {
+        x : xPos,
+	y : yPos,
+	realX : rxPos,
+	realY : ryPos}
+    return position
+}
+
+func (p Position2D) setXPosition (new_x f32) {
+    p.x = new_x
+}
+
+func (p Position2D) setYPosition (new_y f32) {
+    p.y = new_y
+}
+
+
+type Dimension2D struct {
+    height f32
+    width f32
+}
+
+func newDimension2D (h f32, w f32) (dimension Dimension2D) {
+    var dimension Dimension2D
+    dimension = Dimension2D {
+        height: h,
+	width: w }
+    return dimension
+}
+
+func (p Dimension2D) setXPosition (new_width f32) {
+    p.width = new_width
+}
+
+func (p Dimension2D) setYPosition (new_height f32) {
+    p.height = new_height
+}
+
+
+type Color struct {
+    red f32
+    green f32
+    blue f32
+}
+
+func newColor (r f32, g f32, b f32) (color Color) {
+    var color Color
+    color = Color {
+	red : r,
+	green : g,
+	blue : b }
+    return color
+}
+
+func (c Color) getRed(){
+    return c.red
+}
+type Cell struct {
+    position Position2D
+    dimension Dimension2D
+    color Color
+}
+
+
+func newCell (pos Position2D, dim Dimension2D, col Color) (cell Cell) {
+    var cell Cell
+    cell = Cell {
+    	position: pos,
+	dimension: dim,
+	color: col}
+
+    return cell
+}
+
+type Food struct {
+    position Position2D
+    dimension Dimension2D
+    color Color
+}
+
+func newFood (pos Position2D, dim Dimension2D, col Color) (food Food) {
+    var food Food
+    food = Food {
+    	position: pos,
+	dimension: dim,
+	color: col}
+
+    return food
+}
+
+type Player struct{
+    position Position2D
+    dimension Dimension2D
+    color Color
+    direction i32
+    body [30]Cell
+    size i32
+}
+
+func newPlayer (pos Position2D, dim Dimension2D, col Color) (player Player) {
+    var player Player
+    player = Player {
+    	position: pos,
+	dimension: dim,
+	color: col,
+	direction: 0,
+	size :0}
+
+    return player
+}
+
