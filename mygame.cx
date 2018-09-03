@@ -19,6 +19,7 @@ var LEFT i32 = 3
 // Boolean to determine if food got eaten
 var eaten bool = false
 var draw bool = false
+
 //WindowSize
 var WIDTH_WINDOW i32 = 600
 var HEIGHT_WINDOW i32 = 600
@@ -122,7 +123,7 @@ func getColor(name str) (color stuff.Color){
         color = stuff.newColor(0.04, 0.92, 0.51)
     }
     if str.eq(name,"cell"){
-	color = stuff.newColor(0.8, 0.8, 0.8)
+		color = stuff.newColor(0.8, 0.8, 0.8)
     }
     if str.eq(name,"player"){
         color = stuff.newColor(0.0, 0.25,1.0)
@@ -216,27 +217,27 @@ func addElementToBody()(){
     	pos = indexToPosition(playerPosition.realY,playerPosition.realX)
 	}
 	if (playerSize > 0){
-		i32.sub(playerSize,1)
-		
+		playerSize = i32.sub(playerSize,1)
+		var tCellArr [99]stuff.Cell
+		tCellArr = player.body
 		var tCell stuff.Cell
-		tCell = player.body[playerSize]
+		tCell = tCellArr[playerSize]
 
 		var lastElement stuff.Position2D
 		lastElement = tCell.position
 
 		pos = indexToPosition(lastElement.realY,lastElement.realX)
 
-		i32.add(playerSize,1)
+		playerSize = i32.add(playerSize,1)
 	}
-
+	
 	dimension = stuff.newDimension2D(HEIGHT_CELLS,WIDTH_CELLS)
 
-	var tempCell stuff.Cell
-	tempCell = stuff.newCell(pos,dimension,getColor("player"))
-
-	player.body[playerSize] = tempCell
+	var tempCell [99]stuff.Cell
+	tempCell = player.body
+	tempCell[playerSize] = stuff.newCell(pos,dimension,getColor("player"))
+	player.body = tempCell
 	player.size = i32.add(player.size,1)
-	i32.print(player.size)
 }
 
 func drawPlayer()(){
@@ -262,9 +263,9 @@ func drawPlayer()(){
 	var i i32
 	var max i32 = player.size
 	for i=0; i<max;i++{
-		i32.print(player.size)
-		var tempCell stuff.Cell
-		tempCell = player.body[i]
+		var tempCellArr [99]stuff.Cell
+		tempCellArr = player.body
+		var tempCell stuff.Cell= tempCellArr[i]		
 		pos = tempCell.position
 		pos = indexToPosition(pos.realY,pos.realX)
         color = tempCell.color
@@ -297,6 +298,19 @@ func keyControl(window str, key i32, scancode i32, action i32, mods i32)(){
 func movePlayer(direction i32)(){
     var pos stuff.Position2D
     pos = player.position
+
+	var tempCellArr [99]stuff.Cell = player.body
+
+	var max i32 = i32.sub(player.size,1)
+
+	var tempCell stuff.Cell = tempCellArr[max]
+
+	var lastElement stuff.Position2D = tempCell.position
+
+	
+	lastElement.realY = pos.realY
+	lastElement.realX = pos.realX
+
     if i32.eq(direction, UP){
     	pos.realY = i32.sub(pos.realY,1)
     }
@@ -310,6 +324,10 @@ func movePlayer(direction i32)(){
 		pos.realX = i32.sub(pos.realX,1)
     }
     player.position = pos
+
+	tempCell.position = lastElement
+	tempCellArr[max] = tempCell
+	player.body = tempCellArr
 
 }
 
