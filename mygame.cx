@@ -3,12 +3,16 @@ package main
 import "stuff"
 import "gl"
 import "glfw"
+import "gltext"
+import "os"
+
 
 //Keyboard Keys
 var RIGHT_ARROW_KEY i32 = 262
 var LEFT_ARROW_KEY i32 = 263
 var DOWN_ARROW_KEY i32 = 264
 var UP_ARROW_KEY i32 = 265
+var ENTER_KEY i32 = 257
 
 // Directions
 var UP i32 = 0
@@ -16,9 +20,8 @@ var RIGHT i32 = 1
 var DOWN i32 = 2
 var LEFT i32 = 3
 
-// Boolean to determine if food got eaten
-var eaten bool = false
-var draw bool = false
+// Set up the points you get for every food
+var POINTSFORFOOD i32 = 5
 
 //WindowSize
 var WIDTH_WINDOW i32 = 600
@@ -205,7 +208,6 @@ func initPlayer()(){
 }
 
 func addElementToBody()(){
-	//sth.broken
     var playerPosition stuff.Position2D
     playerPosition = player.position
 	var playerSize i32 = player.size
@@ -215,8 +217,7 @@ func addElementToBody()(){
 
 	if (playerSize == 0){
     	pos = indexToPosition(playerPosition.realY,playerPosition.realX)
-	}
-	if (playerSize > 0){
+	}else {
 		playerSize = i32.sub(playerSize,1)
 		var tCellArr [99]stuff.Cell
 		tCellArr = player.body
@@ -241,10 +242,6 @@ func addElementToBody()(){
 }
 
 func drawPlayer()(){
-    if (eaten){
-		addElementToBody()
-		eaten = false
-	}
     var color stuff.Color = player.color
     var pos stuff.Position2D = player.position
     pos = indexToPosition(pos.realY,pos.realX)
@@ -259,7 +256,7 @@ func drawPlayer()(){
     
     gl.End()
 
-	//sth.broken
+
 	var i i32
 	var max i32 = player.size
 	for i=0; i<max;i++{
@@ -282,66 +279,135 @@ func renderScreen()(){
 
 func keyControl(window str, key i32, scancode i32, action i32, mods i32)(){
     if bool.and(i32.eq(key, RIGHT_ARROW_KEY), i32.eq(action, 1)) {
-	movePlayer(RIGHT)
+		changeDir(RIGHT)
     }
     if bool.and(i32.eq(key, LEFT_ARROW_KEY), i32.eq(action, 1)) {
-	movePlayer(LEFT)
+		changeDir(LEFT)
     }
     if bool.and(i32.eq(key, DOWN_ARROW_KEY), i32.eq(action, 1)) {
-	movePlayer(DOWN)
+		changeDir(DOWN)
     }
     if bool.and(i32.eq(key, UP_ARROW_KEY), i32.eq(action, 1)) {
-	movePlayer(UP)
+		changeDir(UP)
+    }
+	if bool.and(i32.eq(key, ENTER_KEY), i32.eq(action, 1)){
+		printf("entered")
+		goto new_game
+	}
+}
+
+func changeDir(direction i32)(){
+    if i32.eq(direction, UP){
+		player.direction = UP
+    }
+    if i32.eq(direction, RIGHT){
+		player.direction = RIGHT
+    }
+    if i32.eq(direction, DOWN){
+		player.direction = DOWN
+    }
+    if i32.eq(direction, LEFT){
+		player.direction = LEFT
     }
 }
 
-func movePlayer(direction i32)(){
-    var pos stuff.Position2D
-    pos = player.position
+func movePlayer()(){
+    if (bool.eq(allowedToMove(),true)){
+		var pos stuff.Position2D
+		pos = player.position
 
-	var tempCellArr [99]stuff.Cell = player.body
+		var dir i32 = player.direction
 
-	var max i32 = i32.sub(player.size,1)
+		var tempCellArr [99]stuff.Cell = player.body
 
-	var tempCell stuff.Cell = tempCellArr[max]
+		var max i32 = i32.sub(player.size,1)
 
-	var lastElement stuff.Position2D = tempCell.position
+		var tempCell stuff.Cell = tempCellArr[max]
 
-	lastElement.realY = pos.realY
-	lastElement.realX = pos.realX
+		var lastElement stuff.Position2D = tempCell.position
 
-    if i32.eq(direction, UP){
-    	pos.realY = i32.sub(pos.realY,1)
+		lastElement.realY = pos.realY
+		lastElement.realX = pos.realX
+
+		if i32.eq(dir, UP){
+			pos.realY = i32.sub(pos.realY,1)
+		}
+		if i32.eq(dir, RIGHT){
+			pos.realX = i32.add(pos.realX,1)
+		}
+		if i32.eq(dir, DOWN){
+			pos.realY = i32.add(pos.realY,1)
+		}
+		if i32.eq(dir, LEFT){
+			pos.realX = i32.sub(pos.realX,1)
+		}
+		player.position = pos
+
+		tempCell.position = lastElement
+		tempCellArr[max] = tempCell
+		player.body = tempCellArr
+
+		switchBodyElements()
+		printf("allowed\n")
+	} else {
+		player.alive = false
+	}
+}
+
+func allowedToMove()(allowed bool){
+	allowed = true
+	var nextPlayerPos stuff.Position2D = player.position
+	var dir i32 = player.direction
+	
+	//set the variable nextPlayerPos to the position the player would go if he is allowed
+	if i32.eq(dir, UP){
+    	nextPlayerPos.realY = i32.sub(nextPlayerPos.realY,1)
     }
-    if i32.eq(direction, RIGHT){
-    	pos.realX = i32.add(pos.realX,1)
+    if i32.eq(dir, RIGHT){
+    	nextPlayerPos.realX = i32.add(nextPlayerPos.realX,1)
     }
-    if i32.eq(direction, DOWN){
-		pos.realY = i32.add(pos.realY,1)
+    if i32.eq(dir, DOWN){
+		nextPlayerPos.realY = i32.add(nextPlayerPos.realY,1)
     }
-    if i32.eq(direction, LEFT){
-		pos.realX = i32.sub(pos.realX,1)
+    if i32.eq(dir, LEFT){
+		nextPlayerPos.realX = i32.sub(nextPlayerPos.realX,1)
     }
-    player.position = pos
+	
+	//check if the player would collide with himself
+	var i i32
+	var max i32 = player.size
+	for i=0; i<max;i++{
+		var pos stuff.Position2D
+		var tempCellArr [99]stuff.Cell
+		tempCellArr = player.body
+		var tempCell stuff.Cell= tempCellArr[i]		
+		pos = tempCell.position
+		if bool.and(i32.eq(nextPlayerPos.realY,pos.realY),i32.eq(nextPlayerPos.realX,pos.realX)){		
+			allowed = false
+			return allowed
+		}
+	}
 
-	tempCell.position = lastElement
-	tempCellArr[max] = tempCell
-	player.body = tempCellArr
+	//check if the player would be outside of the gamefield
+	if bool.or(bool.or(i32.eq(nextPlayerPos.realY,-1),i32.eq(nextPlayerPos.realY,Y_CELLS)),bool.or(i32.eq(nextPlayerPos.realX,-1),i32.eq(nextPlayerPos.realX,X_CELLS))){
+		allowed = false
+		return allowed
+	}
 
-	switchBodyElements()
-
+	return allowed
 }
 
 func switchBodyElements()(){
 	var i i32
-	var max i32 = i32.sub(player.size,0)
+	var max i32 = i32.sub(player.size,1)
 	var tempCellArr [99]stuff.Cell = player.body
-	for i=0; i< max; i++
+	var pos stuff.Position2D
+	for i=max; i > 0; i--
 	{
 		var temp stuff.Cell
-		temp = 	tempCellArr[i]
-		tempCellArr[i] = tempCellArr[i32.add(i,1)]
-		tempCellArr[i32.add(i,1)] = temp
+		temp = tempCellArr[i]
+		tempCellArr[i] = tempCellArr[i32.sub(i,1)]
+		tempCellArr[i32.sub(i,1)] = temp
 	}
 	player.body = tempCellArr
 }
@@ -352,29 +418,69 @@ func checkForFood()(){
 
 	if bool.and(i32.eq(foodPos.realX,playerPos.realX),i32.eq(foodPos.realY,playerPos.realY)){
 		createFood()
-        eaten = true
-        draw = false
+		addElementToBody()
+		player.score = i32.add(player.score,POINTSFORFOOD)
 	}
+}
+
+func setupText()(){
+	var wd str
+	wd = os.GetWorkingDirectory()
+	fontFile := str.concat(wd, "fonts/roboto-light.ttf")
+
+	os.Open(fontFile)
+	gltext.LoadTrueType("Roboto100", fontFile, 100, 32, 127, gltext.LeftToRight)
+	os.Close(fontFile)
+	
+	os.Open(fontFile)
+	gltext.LoadTrueType("Roboto50", fontFile, 50, 32, 127, gltext.LeftToRight)
+	os.Close(fontFile)
+
+	os.Open(fontFile)
+	gltext.LoadTrueType("Roboto30", fontFile, 30, 32, 127, gltext.LeftToRight)
+	os.Close(fontFile)
+
+}
+
+func printScore()(){
+	var playerScore str = str.concat("Score: ", i32.str(player.score))
+	var newGame str 
+	newGame = "Enter to start a new Game"
+	gltext.Printf("Roboto50",200.0, 250.0, playerScore)
+	gltext.Printf("Roboto30",100.0, 340.0, newGame)
 }
 
 func main() {
 
     initGlfw("window")
     var program i32 = initGl()
-
+	
+	new_game:
+	printf("new_game")
+	setupText()
     setupCellSpecs()
     initScene()
-    
+
     glfw.SetKeyCallback("window","keyControl")
     
+	var test f64 = glfw.GetTime()
     for bool.not(glfw.ShouldClose("window")){
 		gl.Clear(i32.bitor(gl.COLOR_BUFFER_BIT, gl.DEPTH_BUFFER_BIT))
 	    gl.UseProgram(program)
-		//Code starts here
-		renderScreen()
-		checkForFood()
-		//Code ends here
+	
 		
+		if (player.alive == true){
+			renderScreen()
+			checkForFood()
+		
+			//check if the time has passed to move again
+			if f64.lt(f32.f64(0.25),f64.sub(glfw.GetTime(),test)){
+				movePlayer()
+				test = glfw.GetTime()
+			}
+		}else {
+			printScore()
+		}
         glfw.PollEvents()
         glfw.SwapBuffers("window")
     }

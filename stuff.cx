@@ -107,6 +107,8 @@ type Player struct{
     direction i32
     body [99]Cell
     size i32
+	score i32
+	alive bool
 }
 
 func newPlayer (pos Position2D, dim Dimension2D, col Color) (player Player) {
@@ -116,7 +118,9 @@ func newPlayer (pos Position2D, dim Dimension2D, col Color) (player Player) {
 		dimension: dim,
 		color: col,
 		direction: 0,
-		size :0}
+		size :0,
+		score : 0,
+		alive : true}
 
     return player
 }
