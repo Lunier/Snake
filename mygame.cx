@@ -6,6 +6,11 @@ import "glfw"
 import "gltext"
 import "os"
 
+//Boolean to determine if the user wants to restart the game
+var restart bool = false
+
+//Determine how often per second the snake moves
+var SPEED f64 = 0.25D
 
 //Keyboard Keys
 var RIGHT_ARROW_KEY i32 = 262
@@ -291,22 +296,21 @@ func keyControl(window str, key i32, scancode i32, action i32, mods i32)(){
 		changeDir(UP)
     }
 	if bool.and(i32.eq(key, ENTER_KEY), i32.eq(action, 1)){
-		printf("entered")
-		goto new_game
+		restart = true
 	}
 }
 
 func changeDir(direction i32)(){
-    if i32.eq(direction, UP){
+    if bool.and(bool.not(i32.eq(player.direction,DOWN)),i32.eq(direction, UP)){
 		player.direction = UP
     }
-    if i32.eq(direction, RIGHT){
+    if bool.and(bool.not(i32.eq(player.direction,LEFT)),i32.eq(direction, RIGHT)){
 		player.direction = RIGHT
     }
-    if i32.eq(direction, DOWN){
+    if bool.and(bool.not(i32.eq(player.direction,UP)),i32.eq(direction, DOWN)){
 		player.direction = DOWN
     }
-    if i32.eq(direction, LEFT){
+    if bool.and(bool.not(i32.eq(player.direction,RIGHT)),i32.eq(direction, LEFT)){
 		player.direction = LEFT
     }
 }
@@ -354,6 +358,11 @@ func movePlayer()(){
 	}
 }
 
+func canMove()(can bool){
+	can = true
+	return can
+}
+
 func allowedToMove()(allowed bool){
 	allowed = true
 	var nextPlayerPos stuff.Position2D = player.position
@@ -375,7 +384,7 @@ func allowedToMove()(allowed bool){
 	
 	//check if the player would collide with himself
 	var i i32
-	var max i32 = player.size
+	var max i32 = i32.sub(player.size,1)
 	for i=0; i<max;i++{
 		var pos stuff.Position2D
 		var tempCellArr [99]stuff.Cell
@@ -456,14 +465,14 @@ func main() {
     var program i32 = initGl()
 	
 	new_game:
-	printf("new_game")
+	restart = false
 	setupText()
     setupCellSpecs()
     initScene()
 
     glfw.SetKeyCallback("window","keyControl")
     
-	var test f64 = glfw.GetTime()
+	var timer f64 = glfw.GetTime()
     for bool.not(glfw.ShouldClose("window")){
 		gl.Clear(i32.bitor(gl.COLOR_BUFFER_BIT, gl.DEPTH_BUFFER_BIT))
 	    gl.UseProgram(program)
@@ -474,12 +483,15 @@ func main() {
 			checkForFood()
 		
 			//check if the time has passed to move again
-			if f64.lt(f32.f64(0.25),f64.sub(glfw.GetTime(),test)){
+			if f64.lt(SPEED,f64.sub(glfw.GetTime(),timer)){
 				movePlayer()
-				test = glfw.GetTime()
+				timer = glfw.GetTime()
 			}
 		}else {
 			printScore()
+			if (restart == true){
+				goto new_game
+			}
 		}
         glfw.PollEvents()
         glfw.SwapBuffers("window")
