@@ -1,4 +1,4 @@
-# Snake v0.1
+# Snake v1.0
 
 Snake is a simple 2D game written in the programming language CX.
 

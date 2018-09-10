@@ -6,6 +6,8 @@ import "glfw"
 import "gltext"
 import "os"
 
+var PI f32 = 3.1459
+
 //Boolean to determine if the user wants to restart the game
 var restart bool = false
 
@@ -56,7 +58,7 @@ func initGlfw(window str) () {
     glfw.WindowHint(glfw.ContextVersionMajor, 2)
     glfw.WindowHint(glfw.ContextVersionMinor, 1)
 
-    glfw.CreateWindow(window,WIDTH_WINDOW,HEIGHT_WINDOW,"Snake v0.1")
+    glfw.CreateWindow(window,WIDTH_WINDOW,HEIGHT_WINDOW,"Snake v1.0")
     glfw.MakeContextCurrent(window)
 }
 
@@ -118,8 +120,8 @@ func initCell(line i32, column i32, art i32) (cell stuff.Cell) {
 }
 
 func indexToPosition (line i32, column i32) (pos stuff.Position2D){
-    var x f32 = f32.add(-1.0, f32.mul(i32.f32(column),WIDTH_CELLS))
-    var y f32 = f32.sub( 1.0, f32.mul(i32.f32(line),HEIGHT_CELLS))
+    var x f32 = f32.add(f32.add(-1.0, f32.mul(i32.f32(column),WIDTH_CELLS)),f32.div(WIDTH_CELLS,2.0))
+    var y f32 = f32.sub(f32.sub( 1.0, f32.mul(i32.f32(line),HEIGHT_CELLS)), f32.div(HEIGHT_CELLS,2.0))
     var pos stuff.Position2D
     pos = stuff.newPosition2D(x,y,column,line)
 
@@ -144,10 +146,10 @@ func drawRectangle(pos stuff.Position2D, dim stuff.Dimension2D, color stuff.Colo
     gl.Begin(gl.QUADS)
     gl.Color3f(color.red, color.green, color.blue)
 
-    gl.Vertex2f(f32.add(pos.x,PADDING), f32.sub(pos.y,PADDING))
-    gl.Vertex2f(f32.add(pos.x,PADDING), f32.add(f32.sub(pos.y,dim.height),PADDING))
-    gl.Vertex2f(f32.sub(f32.add(pos.x,dim.width),PADDING), f32.add(f32.sub(pos.y,dim.height),PADDING))
-    gl.Vertex2f(f32.sub(f32.add(pos.x,dim.width),PADDING), f32.sub(pos.y,PADDING))
+    gl.Vertex2f(f32.add(f32.sub(pos.x,f32.div(dim.width,2.0)),PADDING), f32.sub(f32.add(pos.y,f32.div(dim.height,2.0)),PADDING))
+    gl.Vertex2f(f32.add(f32.sub(pos.x,f32.div(dim.width,2.0)),PADDING), f32.add(f32.sub(pos.y,f32.div(dim.height,2.0)),PADDING))
+    gl.Vertex2f(f32.sub(f32.add(pos.x,f32.div(dim.width,2.0)),PADDING), f32.add(f32.sub(pos.y,f32.div(dim.height,2.0)),PADDING))
+    gl.Vertex2f(f32.sub(f32.add(pos.x,f32.div(dim.width,2.0)),PADDING), f32.sub(f32.add(pos.y,f32.div(dim.height,2.0)),PADDING))
     
     gl.End()
 }
@@ -171,9 +173,9 @@ func drawBoard()(){
 func createFood()(){
     var playerPosition stuff.Position2D
     playerPosition = player.position
-    var x i32 = f32.i32(playerPosition.x)
-    var y i32 = f32.i32(playerPosition.y)
-    for bool.and(i32.eq(x,f32.i32(playerPosition.x)), i32.eq(y,f32.i32(playerPosition.y))){
+    var x i32 = i32.rand(0, i32.sub(X_CELLS,1))
+    var y i32 = i32.rand(0, i32.sub(Y_CELLS,1))
+    for bool.or(bool.and(i32.eq(x,playerPosition.realX), i32.eq(y,playerPosition.realY)),onBody(x,y)){
     	x = i32.rand(0, i32.sub(X_CELLS,1))
     	y = i32.rand(0, i32.sub(Y_CELLS,1))
     }
@@ -186,6 +188,22 @@ func createFood()(){
     food = stuff.newFood(pos,dimension,getColor("food"))
 }
 
+func onBody(x i32, y i32)(answer bool){
+	answer = false
+	var i i32
+	var max i32 = player.size
+	for i=0; i<max;i++{
+		var tempCellArr [99]stuff.Cell
+		tempCellArr = player.body
+		var tempCell stuff.Cell = tempCellArr[i]		
+		var pos stuff.Position2D = tempCell.position
+		if bool.and(i32.eq(pos.realY,y),i32.eq(pos.realX,x)){
+			answer = true
+			return answer
+		}
+	}
+	return answer
+}
 func drawFood()(){
     var color stuff.Color = food.color
     var pos stuff.Position2D = food.position
@@ -193,11 +211,11 @@ func drawFood()(){
     gl.Begin(gl.QUADS)
     gl.Color3f(color.red, color.green, color.blue)
 
-    gl.Vertex2f(f32.add(f32.add(pos.x,f32.div(dim.width,2.0)),PADDING), f32.sub(pos.y,PADDING))
-    gl.Vertex2f(f32.add(pos.x,PADDING), f32.add(f32.sub(pos.y,f32.div(dim.height,2.0)),PADDING))
-    gl.Vertex2f(f32.sub(f32.add(pos.x,f32.div(dim.width,2.0)),PADDING), f32.add(f32.sub(pos.y,dim.height),PADDING))
-    gl.Vertex2f(f32.sub(f32.add(pos.x,dim.width),PADDING), f32.sub(f32.sub(pos.y,f32.div(dim.height,2.0)),PADDING))
-    
+    gl.Vertex2f(f32.add(pos.x,PADDING), 								f32.sub(f32.add(pos.y,f32.div(dim.height,2.0)),PADDING))
+    gl.Vertex2f(f32.add(f32.sub(pos.x,f32.div(dim.width,2.0)),PADDING), f32.add(pos.y,PADDING))
+    gl.Vertex2f(f32.sub(pos.x,PADDING), 								f32.add(f32.sub(pos.y,f32.div(dim.height,2.0)),PADDING))
+    gl.Vertex2f(f32.sub(f32.add(pos.x,f32.div(dim.width,2.0)),PADDING), f32.sub(pos.y,PADDING))
+
     gl.End()
 }
 
@@ -252,13 +270,12 @@ func drawPlayer()(){
     pos = indexToPosition(pos.realY,pos.realX)
     var dim stuff.Dimension2D = player.dimension
 
+
     gl.Begin(gl.TRIANGLES)
     gl.Color3f(color.red, color.green, color.blue)
-
-    gl.Vertex2f(f32.add(f32.add(pos.x,f32.div(dim.width,2.0)),PADDING), f32.sub(pos.y,PADDING))
-    gl.Vertex2f(f32.add(pos.x,PADDING), f32.add(f32.sub(pos.y,dim.height),PADDING))
-    gl.Vertex2f(f32.sub(f32.add(pos.x,dim.width),PADDING), f32.add(f32.sub(pos.y,dim.height),PADDING))
-    
+	
+	drawHead(player.direction,pos.x,pos.y,dim.height,dim.width)
+	
     gl.End()
 
 
@@ -276,6 +293,28 @@ func drawPlayer()(){
 	}
 }
 
+func drawHead(dir i32,x f32, y f32, h f32, w f32)(){
+	if i32.eq(dir, UP){
+    	gl.Vertex2f(x,y+h/2.0-PADDING)
+		gl.Vertex2f(x-w/2.0+PADDING,y-h/2.0+PADDING)
+		gl.Vertex2f(x+w/2.0-PADDING,y-h/2.0+PADDING)
+    }
+    if i32.eq(dir, RIGHT){
+		gl.Vertex2f(x+w/2.0-PADDING,y)
+		gl.Vertex2f(x-w/2.0+PADDING,y+h/2.0-PADDING)
+		gl.Vertex2f(x-w/2.0+PADDING,y-h/2.0+PADDING)
+    }
+    if i32.eq(dir, DOWN){
+    	gl.Vertex2f(x,y-h/2.0-PADDING)
+		gl.Vertex2f(x-w/2.0+PADDING,y+h/2.0-PADDING)
+		gl.Vertex2f(x+w/2.0-PADDING,y+h/2.0-PADDING)
+    }
+    if i32.eq(dir, LEFT){
+		gl.Vertex2f(x-w/2.0+PADDING,y)
+		gl.Vertex2f(x+w/2.0-PADDING,y+h/2.0-PADDING)
+		gl.Vertex2f(x+w/2.0-PADDING,y-h/2.0+PADDING)
+    }
+}
 func renderScreen()(){
     drawBoard()
     drawPlayer()
@@ -352,15 +391,9 @@ func movePlayer()(){
 		player.body = tempCellArr
 
 		switchBodyElements()
-		printf("allowed\n")
 	} else {
 		player.alive = false
 	}
-}
-
-func canMove()(can bool){
-	can = true
-	return can
 }
 
 func allowedToMove()(allowed bool){
