@@ -45,7 +45,7 @@ The code is currently very disorganized due to the fact that this was my first e
 If you want to show your appreciation for my work fell free to send a contribution in Skycoin to the address below. <br/>
 Also if you have any ideas to improve the game, please share them with me.
 
-Skycoin Address: shAih4RfkkS9yKF2ULouWdE6pfXdikb6i6 <br/>
+Skycoin Address: shAih4RfkkS9yKF2ULouWdE6pfXdikb6i6<br/>
 Thank you Skycoin community!
 
 ## Disclamer
