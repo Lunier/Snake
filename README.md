@@ -1,5 +1,9 @@
 # Snake v1.0
 
+<p align="center">
+  <img src="screenshots/screenshot.png">
+</p>
+
 Snake is a simple 2D game written in the programming language CX.
 
 ## What is CX?
@@ -7,13 +11,13 @@ CX is a general purpose, interpreted and compiled programming language, with a v
 
 You can find more info on:
 
-The github page on CX - https://github.com/skycoin/cx
+The github page on CX - https://github.com/skycoin/cx <br/>
 The official website of Skycoin - https://www.skycoin.net/
 
 ## Installation
-Snake requires the latest version of [CX] (https://github.com/skycoin/cx) to run.
+Snake requires the latest version of [CX](https://github.com/skycoin/cx) to run.
 
-Install the dependencies and devDependencies and start the server. After installing [CX] (https://github.com/skycoin/cx) and all its dependencies clone this repository by running:
+Install the dependencies and devDependencies and start the server. After installing [CX](https://github.com/skycoin/cx) and all its dependencies clone this repository by running:
 ```
 $ git clone https://github.com/Lunier/Snake.git
 ```
@@ -38,9 +42,10 @@ The code is currently very disorganized due to the fact that this was my first e
 * Ask the community for feedback/features
 
 ## Contribute
-If you want to show your appreciation for my work fell free to send a contribution in Skycoin to the address below and/or send me some ideas 
+If you want to show your appreciation for my work fell free to send a contribution in Skycoin to the address below. <br/>
+Also if you have any ideas to improve the game, please share them with me.
 
-Skycoin Address: shAih4RfkkS9yKF2ULouWdE6pfXdikb6i6
+Skycoin Address: shAih4RfkkS9yKF2ULouWdE6pfXdikb6i6 <br/>
 Thank you Skycoin community!
 
 ## Disclamer
