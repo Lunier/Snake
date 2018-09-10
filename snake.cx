@@ -491,7 +491,7 @@ func setupText()(){
 func printScore()(){
 	var playerScore str = str.concat("Score: ", i32.str(player.score))
 	var newGame str 
-	newGame = "Enter to start a new Game"
+	newGame = "Press enter to start a new Game"
 	gltext.Printf("Roboto50",200.0, 250.0, playerScore)
 	gltext.Printf("Roboto30",100.0, 340.0, newGame)
 }
