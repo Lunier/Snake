@@ -518,7 +518,6 @@ func main() {
 		if (player.alive == true){
 			renderScreen()
 			checkForFood()
-		
 			//check if the time has passed to move again
 			if f64.lt(SPEED,f64.sub(glfw.GetTime(),timer)){
 				movePlayer()
