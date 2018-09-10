@@ -6,6 +6,8 @@ import "glfw"
 import "gltext"
 import "os"
 
+
+var once bool
 var PI f32 = 3.1459
 
 //Boolean to determine if the user wants to restart the game
@@ -502,6 +504,7 @@ func main() {
     var program i32 = initGl()
 	
 	new_game:
+	once = true
 	restart = false
 	setupText()
     setupCellSpecs()
@@ -511,11 +514,10 @@ func main() {
     
 	var timer f64 = glfw.GetTime()
     for bool.not(glfw.ShouldClose("window")){
-		gl.Clear(i32.bitor(gl.COLOR_BUFFER_BIT, gl.DEPTH_BUFFER_BIT))
-	    gl.UseProgram(program)
-	
-		
+
 		if (player.alive == true){
+			gl.Clear(i32.bitor(gl.COLOR_BUFFER_BIT, gl.DEPTH_BUFFER_BIT))
+	    	gl.UseProgram(program)
 			renderScreen()
 			checkForFood()
 			//check if the time has passed to move again
@@ -524,7 +526,12 @@ func main() {
 				timer = glfw.GetTime()
 			}
 		}else {
-			printScore()
+			if (once){
+				gl.Clear(i32.bitor(gl.COLOR_BUFFER_BIT, gl.DEPTH_BUFFER_BIT))
+				gl.UseProgram(program)
+				printScore()
+				once = false
+			}
 			if (restart == true){
 				goto new_game
 			}
