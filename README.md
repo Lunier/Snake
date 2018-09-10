@@ -1,7 +1,7 @@
 # Snake v1.0
-
-<p align="center">
-  <img src="screenshots/screenshot.png">
+<p float="left">
+  <img height="425" width="425" src="screenshots/snake-alive.png">
+  <img height="425" width="425" src="screenshots/score.png">
 </p>
 
 Snake is a simple 2D game written in the programming language CX.
@@ -32,7 +32,7 @@ In order to run the game type the following command:
 ```
 $ cx stuff.cx snake.cx
 ```
-Use the arrows to move the player.
+Use the arrows to move the player and try to eat the food, while not eating yourself.
 
 ## To Do...
 The code is currently very disorganized due to the fact that this was my first experience with CX and I had to play around some bugs. I will make sure to clean things up as soon as possible.
