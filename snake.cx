@@ -34,6 +34,10 @@ var POINTSFORFOOD i32 = 5
 var WIDTH_WINDOW i32 = 600
 var HEIGHT_WINDOW i32 = 600
 
+//start position of the snake
+var X_START i32 = 11
+var Y_START i32 = 11
+
 //Maximum Gamefields
 var X_CELLS i32 = 20
 var Y_CELLS i32 = 20
@@ -221,8 +225,8 @@ func drawFood()(){
 
 func initPlayer()(){
     var pos stuff.Position2D
-    pos.realX = 11
-	pos.realY = 11
+    pos.realX = X_START
+	pos.realY = Y_START
 
     var dim stuff.Dimension2D
     dim = stuff.newDimension2D(HEIGHT_CELLS,WIDTH_CELLS)
