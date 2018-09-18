@@ -6,9 +6,15 @@ import "glfw"
 import "gltext"
 import "os"
 
-
+//to print out the printScore method only once
 var once bool
-var PI f32 = 3.1459
+
+//global texture
+var snakeHeadTex i32
+var snakeBodyTex i32
+var snakeTailTex i32
+var foodTex i32
+var backgroundTex i32
 
 //Boolean to determine if the user wants to restart the game
 var restart bool = false
@@ -25,35 +31,37 @@ var ENTER_KEY i32 = 257
 
 // Directions
 var UP i32 = 0
-var RIGHT i32 = 1
+var LEFT i32 = 1
 var DOWN i32 = 2
-var LEFT i32 = 3
+var RIGHT i32 = 3
 
 // Set up the points you get for every food
 var POINTSFORFOOD i32 = 5
 
 //WindowSize
-var WIDTH_WINDOW i32 = 600
-var HEIGHT_WINDOW i32 = 600
+var WINDOW_WIDTH i32 = 600
+var WINDOW_HEIGHT i32 = 600
 
 //start position of the snake
 var X_START i32 = 11
 var Y_START i32 = 11
 
 //Maximum Gamefields
-var X_CELLS i32 = 20
-var Y_CELLS i32 = 20
+var CELLS_X i32 = 20
+var CELLS_Y i32 = 20
 
 //Width and Height of a Cell
-var WIDTH_CELLS f32 = 0.0
-var HEIGHT_CELLS f32 = 0.0
+var CELLS_WIDTH_PX f32 = 0.0
+var CELLS_HEIGHT_PX f32 = 0.0
+var CELLS_WIDTH_SC f32 = 0.0
+var CELLS_HEIGHT_SC f32 = 0.0
 
 //Padding between rectangles
 var PADDING f32 = 0.0
 
 var gamefield [20][20]Cell
 
-var food stuff.Food
+var food stuff.Cell
 
 var player stuff.Player
 
@@ -64,25 +72,42 @@ func initGlfw(window str) () {
     glfw.WindowHint(glfw.ContextVersionMajor, 2)
     glfw.WindowHint(glfw.ContextVersionMinor, 1)
 
-    glfw.CreateWindow(window,WIDTH_WINDOW,HEIGHT_WINDOW,"Snake v1.0")
+    glfw.CreateWindow(window,WINDOW_WIDTH,WINDOW_HEIGHT,"Snake v1.0")
     glfw.MakeContextCurrent(window)
 }
 
 func initGl() (program i32) {
-    gl.Init()
-    var program i32
+	gl.Init()
     program = gl.CreateProgram()
     gl.LinkProgram(program)
+	return program
+}
+
+/* Function     : initTextures
+   Input        : 
+   Output       : 
+   Desctription : initializes the global texture variables
+*/
+func initTextures() (){
+	var wd str
+	wd = os.GetWorkingDirectory()
+	
+	snakeHeadTex = gl.NewTexture(sprintf("%stextures/snake-head.png",wd))
+	snakeBodyTex = gl.NewTexture(sprintf("%stextures/snake-body.png",wd))
+	snakeTailTex = gl.NewTexture(sprintf("%stextures/snake-tail.png",wd))
+	foodTex = gl.NewTexture(sprintf("%stextures/food-white.png",wd))
+	backgroundTex = gl.NewTexture(sprintf("%stextures/background.png",wd))
 }
 
 func setupCellSpecs() (){
-    WIDTH_CELLS = f32.div(2.0, i32.f32(X_CELLS))
-    HEIGHT_CELLS = f32.div(2.0, i32.f32(Y_CELLS))
-    PADDING = f32.div(WIDTH_CELLS, 20.0)
+    CELLS_WIDTH_PX = f32.div(i32.f32(WINDOW_WIDTH),i32.f32(CELLS_X))
+    CELLS_HEIGHT_PX = f32.div(i32.f32(WINDOW_HEIGHT),i32.f32(CELLS_Y))
+	CELLS_WIDTH_SC = f32.div(2.0, i32.f32(CELLS_X))
+	CELLS_HEIGHT_SC = f32.div(2.0, i32.f32(CELLS_Y))
 }
 
 /* Function     : initScene
-   Desctription : Responsible for the grey tiles-Background
+   Desctription : Initializes the gamefield,Player and Food
 */
 func initScene() (){
     gl.Clear(i32.bitor(gl.COLOR_BUFFER_BIT, gl.DEPTH_BUFFER_BIT))
@@ -92,160 +117,221 @@ func initScene() (){
 	gl.MatrixMode(gl.MODELVIEW)
 
 	initGamefield()
-	drawBoard()
 	initPlayer()
-	drawPlayer()
 	createFood()
-    drawFood()
 }
 
+/* Function     : initGamefield
+   Input        : 
+   Output       : 
+   Desctription : initializes the global gamefield variable
+*/
 func initGamefield()(){
     var i i32
     var j i32
 
-    for i = 0; i < Y_CELLS; i++
+    for i = 0; i < CELLS_Y; i++
     {
-		for j=0; j < X_CELLS; j++
+		for j=0; j < CELLS_X; j++
 		{
-			gamefield[i][j] = initCell(i,j,0)
+			gamefield[i][j] = initCell(i,j,backgroundTex)
 		}
     }
 }
 
-func initCell(line i32, column i32, art i32) (cell stuff.Cell) {
+/* Function     : initCell
+   Input        : line(i32)   = y-Index on the Gamefield
+				: column(i32) = x-Index on the Gamefield
+				: tex(i32)	  = texture
+   Output       : cell(Cell)  = return newCell
+   Desctription : initializes a cell
+*/
+func initCell(line i32, column i32, tex i32) (cell stuff.Cell) {
     var pos stuff.Position2D
     pos = indexToPosition(line,column)
 
     var dimension stuff.Dimension2D
-    dimension = stuff.newDimension2D(HEIGHT_CELLS,WIDTH_CELLS)
+    dimension = stuff.newDimension2D(CELLS_HEIGHT_PX,CELLS_WIDTH_PX)
 
     var cell stuff.Cell
-    cell = stuff.newCell(pos,dimension,getColor("cell"))
+    cell = stuff.newCell(pos,dimension,tex)
 
     return cell
 }
 
+/* Function     : indexToPosition
+   Input        : line(i32)   = y-Index on the Gamefield
+				: column(i32) = x-Index on the Gamefield
+   Output       : pos(Position2D)  = return newPosition
+   Desctription : Calculates the screen position according to the line and column -> between -1 and 1
+*/
 func indexToPosition (line i32, column i32) (pos stuff.Position2D){
-    var x f32 = f32.add(f32.add(-1.0, f32.mul(i32.f32(column),WIDTH_CELLS)),f32.div(WIDTH_CELLS,2.0))
-    var y f32 = f32.sub(f32.sub( 1.0, f32.mul(i32.f32(line),HEIGHT_CELLS)), f32.div(HEIGHT_CELLS,2.0))
+    var x f32 = f32.add(f32.add(-1.0, f32.mul(i32.f32(column),CELLS_WIDTH_SC)),f32.div(CELLS_WIDTH_SC,2.0))
+    var y f32 = f32.sub(f32.sub( 1.0, f32.mul(i32.f32(line),CELLS_HEIGHT_SC)), f32.div(CELLS_HEIGHT_SC,2.0))
     var pos stuff.Position2D
     pos = stuff.newPosition2D(x,y,column,line)
 
     return pos
 }
 
-func getColor(name str) (color stuff.Color){
-    if str.eq(name,"food"){
-        color = stuff.newColor(0.04, 0.92, 0.51)
-    }
-    if str.eq(name,"cell"){
-		color = stuff.newColor(0.8, 0.8, 0.8)
-    }
-    if str.eq(name,"player"){
-        color = stuff.newColor(0.0, 0.25,1.0)
-    }
-    
-    return color
-}
-
-func drawRectangle(pos stuff.Position2D, dim stuff.Dimension2D, color stuff.Color){
-    gl.Begin(gl.QUADS)
-    gl.Color3f(color.red, color.green, color.blue)
-
-    gl.Vertex2f(f32.add(f32.sub(pos.x,f32.div(dim.width,2.0)),PADDING), f32.sub(f32.add(pos.y,f32.div(dim.height,2.0)),PADDING))
-    gl.Vertex2f(f32.add(f32.sub(pos.x,f32.div(dim.width,2.0)),PADDING), f32.add(f32.sub(pos.y,f32.div(dim.height,2.0)),PADDING))
-    gl.Vertex2f(f32.sub(f32.add(pos.x,f32.div(dim.width,2.0)),PADDING), f32.add(f32.sub(pos.y,f32.div(dim.height,2.0)),PADDING))
-    gl.Vertex2f(f32.sub(f32.add(pos.x,f32.div(dim.width,2.0)),PADDING), f32.sub(f32.add(pos.y,f32.div(dim.height,2.0)),PADDING))
-    
-    gl.End()
-}
-
+/* Function     : drawBoard
+   Input        : 
+   Output       : 
+   Desctription : prints the gamefield to the Screen
+*/
 func drawBoard()(){
     var i i32
     var j i32
 
-    for i = 0; i < Y_CELLS; i++
+    for i = 0; i < CELLS_Y; i++
     {
-		for j=0; j < X_CELLS; j++
+		for j=0; j < CELLS_X; j++
 		{
-			drawRectangle(gamefield[i][j].position, gamefield[i][j].dimension, gamefield[i][j].color)
+			drawCell(gamefield[i][j].position, gamefield[i][j].dimension, gamefield[i][j].texture,0)
 		}
     }
 }
 
+/*	Function     : drawCell
+	Input        : 
+   	Output       : 
+   	Desctription : prints the Cell to the Screen
+*/
+func drawCell(pos stuff.Position2D, dim stuff.Dimension2D, tex i32, rotation i32) (){
+	gl.LoadIdentity()
+	gl.BindTexture(gl.TEXTURE_2D, tex)
+
+	gl.Translatef(pos.x, pos.y, 0.0)
+	gl.Scalef(scale(dim.width,WINDOW_WIDTH), scale(dim.height,WINDOW_HEIGHT), 0.0)
+	gl.Rotatef(0.0, 0.0, 0.0, 1.0);
+	gl.Begin(gl.QUADS)
+
+	gl.TexCoord2d(0.0D, 0.0D);
+	gl.Vertex3f(-1.0, 1.0, 0.0);
+
+	gl.TexCoord2d(1.0D, 0.0D);
+	gl.Vertex3f(1.0, 1.0, 0.0);
+
+	gl.TexCoord2d(1.0D, 1.0D);
+	gl.Vertex3f(1.0, -1.0, 0.0);
+
+	gl.TexCoord2d(0.0D, 1.0D);
+	gl.Vertex3f(-1.0, -1.0, 0.0);
+
+	gl.End();
+}
+
+func scale(numerator f32, denominator i32) (result f32) {
+	result = f32.div(numerator, i32.f32(denominator))
+	return result
+}
+
 /* Function     : createFood
+
    Desctription : Creates a new Food and assigns it to the global variable
 */
 func createFood()(){
-    var playerPosition stuff.Position2D
-    playerPosition = player.position
-    var x i32 = i32.rand(0, i32.sub(X_CELLS,1))
-    var y i32 = i32.rand(0, i32.sub(Y_CELLS,1))
-    for bool.or(bool.and(i32.eq(x,playerPosition.realX), i32.eq(y,playerPosition.realY)),onBody(x,y)){
-    	x = i32.rand(0, i32.sub(X_CELLS,1))
-    	y = i32.rand(0, i32.sub(Y_CELLS,1))
+    var x i32 = i32.rand(0, i32.sub(CELLS_X,1))
+    var y i32 = i32.rand(0, i32.sub(CELLS_Y,1))
+    for (onPlayer(x,y)){
+    	x = i32.rand(0, i32.sub(CELLS_X,1))
+    	y = i32.rand(0, i32.sub(CELLS_Y,1))
     }
     var pos stuff.Position2D
     pos = indexToPosition(y,x)
 
     var dimension stuff.Dimension2D
-    dimension = stuff.newDimension2D(HEIGHT_CELLS,WIDTH_CELLS)
+    dimension = stuff.newDimension2D(CELLS_WIDTH_PX,CELLS_HEIGHT_PX)
 
-    food = stuff.newFood(pos,dimension,getColor("food"))
+    food = stuff.newCell(pos,dimension,foodTex)
 }
 
-func onBody(x i32, y i32)(answer bool){
+/* 	Function     : onPlayer
+	Input		 : x(i32) = x-Position
+				 : y(i32) = y-Position
+	Output		 : answer(bool) 
+   	Desctription : Checks if the x,y-Position is equal to a Player position
+*/
+func onPlayer(x i32, y i32)(answer bool){
 	answer = false
+
+	var currPart stuff.Cell
+	var currPos stuff.Position2D
+
+	//check for headPosition
+	currPart = player.head
+	currPos = currPart.position
+	if bool.and(i32.eq(x,currPos.realX),i32.eq(y,currPos.realY)){
+		answer = true
+		return answer
+	}
+
+	/*var i i32
+	var max i32 = player.size
+	for i=0; i<max;i++{
+		currPart = player.body[i]
+		currPos = currPart.position
+		if bool.and(i32.eq(currPos.realY,y),i32.eq(currPos.realX,x)){
+			answer = true
+			return answer
+		}
+	}*/
+	return answer
+}
+
+/* 	Function     : drawFood
+	Input		 : 
+	Output		 : 
+   	Desctription : Draws the food 
+*/
+func drawFood()(){
+	drawCell(food.position, food.dimension, food.texture,0)
+}
+
+func initPlayer()(){
+    var pos stuff.Position2D
+    pos = indexToPosition(Y_START,X_START)
+
+    var dim stuff.Dimension2D
+    dim = stuff.newDimension2D(CELLS_HEIGHT_PX,CELLS_WIDTH_PX)
+    
+    player = stuff.newPlayer()
+	player.head = stuff.newCell(pos,dim,snakeHeadTex)
+}
+
+func drawPlayer()(){
+    var currPart stuff.Cell
+
+	//draw Head
+	currPart = player.head
+	drawCell(currPart.position, currPart.dimension, currPart.texture,0)
+
+	/*//draw Body
 	var i i32
 	var max i32 = player.size
 	for i=0; i<max;i++{
 		var tempCellArr [99]stuff.Cell
 		tempCellArr = player.body
-		var tempCell stuff.Cell = tempCellArr[i]		
-		var pos stuff.Position2D = tempCell.position
-		if bool.and(i32.eq(pos.realY,y),i32.eq(pos.realX,x)){
-			answer = true
-			return answer
-		}
-	}
-	return answer
-}
-func drawFood()(){
-    var color stuff.Color = food.color
-    var pos stuff.Position2D = food.position
-    var dim stuff.Dimension2D = food.dimension
-    gl.Begin(gl.QUADS)
-    gl.Color3f(color.red, color.green, color.blue)
-
-    gl.Vertex2f(f32.add(pos.x,PADDING), 								f32.sub(f32.add(pos.y,f32.div(dim.height,2.0)),PADDING))
-    gl.Vertex2f(f32.add(f32.sub(pos.x,f32.div(dim.width,2.0)),PADDING), f32.add(pos.y,PADDING))
-    gl.Vertex2f(f32.sub(pos.x,PADDING), 								f32.add(f32.sub(pos.y,f32.div(dim.height,2.0)),PADDING))
-    gl.Vertex2f(f32.sub(f32.add(pos.x,f32.div(dim.width,2.0)),PADDING), f32.sub(pos.y,PADDING))
-
-    gl.End()
-}
-
-func initPlayer()(){
-    var pos stuff.Position2D
-    pos.realX = X_START
-	pos.realY = Y_START
-
-    var dim stuff.Dimension2D
-    dim = stuff.newDimension2D(HEIGHT_CELLS,WIDTH_CELLS)
-    
-    player = stuff.newPlayer(pos,dim,getColor("player"))
+		var tempCell stuff.Cell= tempCellArr[i]		
+		pos = tempCell.position
+		pos = indexToPosition(pos.realY,pos.realX)
+        color = tempCell.color
+		dim = tempCell.dimension
+	}*/
 }
 
 func addElementToBody()(){
-    var playerPosition stuff.Position2D
-    playerPosition = player.position
+    var currPart stuff.Cell
+    var currPos stuff.Position2D
 	var playerSize i32 = player.size
 	var dimension stuff.Dimension2D
-	var color stuff.Color
 	var pos stuff.Position2D
 
+	
 	if (playerSize == 0){
-    	pos = indexToPosition(playerPosition.realY,playerPosition.realX)
+		currPart = player.head
+		currPos = currPart.position
+    	pos = indexToPosition(currPos.realY,currPos.realX)
 	}else {
 		playerSize = i32.sub(playerSize,1)
 		var tCellArr [99]stuff.Cell
@@ -261,66 +347,35 @@ func addElementToBody()(){
 		playerSize = i32.add(playerSize,1)
 	}
 	
-	dimension = stuff.newDimension2D(HEIGHT_CELLS,WIDTH_CELLS)
+	dimension = stuff.newDimension2D(CELLS_HEIGHT_PX,CELLS_WIDTH_PX)
 
-	var tempCell [99]stuff.Cell
-	tempCell = player.body
-	tempCell[playerSize] = stuff.newCell(pos,dimension,getColor("player"))
-	player.body = tempCell
+	var newPart stuff.Cell
+	newPart = stuff.newCell(pos,dimension,snakeBodyTex)
+	
+	var currBody [99]stuff.Cell
+	currBody = player.body
+	
+	currBody[playerSize] = newPart
+	player.body = currBody
 	player.size = i32.add(player.size,1)
 }
 
-func drawPlayer()(){
-    var color stuff.Color = player.color
-    var pos stuff.Position2D = player.position
-    pos = indexToPosition(pos.realY,pos.realX)
-    var dim stuff.Dimension2D = player.dimension
 
-
-    gl.Begin(gl.TRIANGLES)
-    gl.Color3f(color.red, color.green, color.blue)
-	
-	drawHead(player.direction,pos.x,pos.y,dim.height,dim.width)
-	
-    gl.End()
-
-
+func switchBodyElements()(){/*
 	var i i32
-	var max i32 = player.size
-	for i=0; i<max;i++{
-		var tempCellArr [99]stuff.Cell
-		tempCellArr = player.body
-		var tempCell stuff.Cell= tempCellArr[i]		
-		pos = tempCell.position
-		pos = indexToPosition(pos.realY,pos.realX)
-        color = tempCell.color
-		dim = tempCell.dimension
-		drawRectangle(pos,dim,color)
+	var max i32 = i32.sub(player.size,1)
+	var tempCellArr [99]stuff.Cell = player.body
+	var pos stuff.Position2D
+	for i=max; i > 0; i--
+	{
+		var temp stuff.Cell
+		temp = tempCellArr[i]
+		tempCellArr[i] = tempCellArr[i32.sub(i,1)]
+		tempCellArr[i32.sub(i,1)] = temp
 	}
+	player.body = tempCellArr*/
 }
 
-func drawHead(dir i32,x f32, y f32, h f32, w f32)(){
-	if i32.eq(dir, UP){
-    	gl.Vertex2f(x,y+h/2.0-PADDING)
-		gl.Vertex2f(x-w/2.0+PADDING,y-h/2.0+PADDING)
-		gl.Vertex2f(x+w/2.0-PADDING,y-h/2.0+PADDING)
-    }
-    if i32.eq(dir, RIGHT){
-		gl.Vertex2f(x+w/2.0-PADDING,y)
-		gl.Vertex2f(x-w/2.0+PADDING,y+h/2.0-PADDING)
-		gl.Vertex2f(x-w/2.0+PADDING,y-h/2.0+PADDING)
-    }
-    if i32.eq(dir, DOWN){
-    	gl.Vertex2f(x,y-h/2.0-PADDING)
-		gl.Vertex2f(x-w/2.0+PADDING,y+h/2.0-PADDING)
-		gl.Vertex2f(x+w/2.0-PADDING,y+h/2.0-PADDING)
-    }
-    if i32.eq(dir, LEFT){
-		gl.Vertex2f(x-w/2.0+PADDING,y)
-		gl.Vertex2f(x+w/2.0-PADDING,y+h/2.0-PADDING)
-		gl.Vertex2f(x+w/2.0-PADDING,y-h/2.0+PADDING)
-    }
-}
 func renderScreen()(){
     drawBoard()
     drawPlayer()
@@ -346,38 +401,45 @@ func keyControl(window str, key i32, scancode i32, action i32, mods i32)(){
 }
 
 func changeDir(direction i32)(){
-    if bool.and(bool.not(i32.eq(player.direction,DOWN)),i32.eq(direction, UP)){
-		player.direction = UP
+	var playerHead stuff.Cell
+    if bool.and(bool.not(i32.eq(playerHead.direction,DOWN)),i32.eq(direction, UP)){
+		playerHead.direction = UP
     }
-    if bool.and(bool.not(i32.eq(player.direction,LEFT)),i32.eq(direction, RIGHT)){
-		player.direction = RIGHT
+    if bool.and(bool.not(i32.eq(playerHead.direction,LEFT)),i32.eq(direction, RIGHT)){
+		playerHead.direction = RIGHT
     }
-    if bool.and(bool.not(i32.eq(player.direction,UP)),i32.eq(direction, DOWN)){
-		player.direction = DOWN
+    if bool.and(bool.not(i32.eq(playerHead.direction,UP)),i32.eq(direction, DOWN)){
+		playerHead.direction = DOWN
     }
-    if bool.and(bool.not(i32.eq(player.direction,RIGHT)),i32.eq(direction, LEFT)){
-		player.direction = LEFT
+    if bool.and(bool.not(i32.eq(playerHead.direction,RIGHT)),i32.eq(direction, LEFT)){
+		playerHead.direction = LEFT
     }
+	player.head = playerHead
 }
 
-func movePlayer()(){
+func movePlayer()(){/*
     if (bool.eq(allowedToMove(),true)){
+		var currPart stuff.Cell		
 		var pos stuff.Position2D
-		pos = player.position
+		currPart = player.head
+		pos = currPart.position
 
-		var dir i32 = player.direction
+		var dir i32 = currPart.direction
+		if(player.size > 0)
+		{
+			var tempCellArr [99]stuff.Cell = player.body
 
-		var tempCellArr [99]stuff.Cell = player.body
+			var tempCell stuff.Cell = tempCellArr[0]
 
-		var max i32 = i32.sub(player.size,1)
+			var firstElement stuff.Position2D = tempCell.position
 
-		var tempCell stuff.Cell = tempCellArr[max]
-
-		var lastElement stuff.Position2D = tempCell.position
-
-		lastElement.realY = pos.realY
-		lastElement.realX = pos.realX
-
+			firstElement.realY = pos.realY
+			firstElement.realX = pos.realX
+			
+			tempCell.position = firstElement
+			tempCellArr[max] = tempCell
+			player.body = tempCellArr
+		}
 		if i32.eq(dir, UP){
 			pos.realY = i32.sub(pos.realY,1)
 		}
@@ -390,54 +452,58 @@ func movePlayer()(){
 		if i32.eq(dir, LEFT){
 			pos.realX = i32.sub(pos.realX,1)
 		}
-		player.position = pos
-
-		tempCell.position = lastElement
-		tempCellArr[max] = tempCell
-		player.body = tempCellArr
+		currPart = pos
+		player.head = currPart
 
 		switchBodyElements()
 	} else {
 		player.alive = false
-	}
+	}*/
 }
 
 func allowedToMove()(allowed bool){
 	allowed = true
-	var nextPlayerPos stuff.Position2D = player.position
-	var dir i32 = player.direction
+	var currPart stuff.Cell 
+	var nextPos stuff.Position2D
+	var currDir i32
+	var currPos stuff.Position2D
+
+	currPart = player.head
+	nextPos = currPart.position
+	currDir = currPart.direction
+
+	
 	
 	//set the variable nextPlayerPos to the position the player would go if he is allowed
-	if i32.eq(dir, UP){
-    	nextPlayerPos.realY = i32.sub(nextPlayerPos.realY,1)
+	if i32.eq(currDir, UP){
+    	nextPos.realY = i32.sub(nextPos.realY,1)
     }
-    if i32.eq(dir, RIGHT){
-    	nextPlayerPos.realX = i32.add(nextPlayerPos.realX,1)
+    if i32.eq(currDir, RIGHT){
+    	nextPos.realX = i32.add(nextPos.realX,1)
     }
-    if i32.eq(dir, DOWN){
-		nextPlayerPos.realY = i32.add(nextPlayerPos.realY,1)
+    if i32.eq(currDir, DOWN){
+		nextPos.realY = i32.add(nextPos.realY,1)
     }
-    if i32.eq(dir, LEFT){
-		nextPlayerPos.realX = i32.sub(nextPlayerPos.realX,1)
+    if i32.eq(currDir, LEFT){
+		nextPos.realX = i32.sub(nextPos.realX,1)
     }
 	
+	var tempBodyArr [99]stuff.Cell
+	tempBodyArr = player.body
 	//check if the player would collide with himself
 	var i i32
 	var max i32 = i32.sub(player.size,1)
 	for i=0; i<max;i++{
-		var pos stuff.Position2D
-		var tempCellArr [99]stuff.Cell
-		tempCellArr = player.body
-		var tempCell stuff.Cell= tempCellArr[i]		
-		pos = tempCell.position
-		if bool.and(i32.eq(nextPlayerPos.realY,pos.realY),i32.eq(nextPlayerPos.realX,pos.realX)){		
+		currPart = tempBodyArr[i]
+		currPos = currPart.position
+		if bool.and(i32.eq(nextPos.realY,currPos.realY),i32.eq(nextPos.realX,currPos.realX)){		
 			allowed = false
 			return allowed
 		}
 	}
 
 	//check if the player would be outside of the gamefield
-	if bool.or(bool.or(i32.eq(nextPlayerPos.realY,-1),i32.eq(nextPlayerPos.realY,Y_CELLS)),bool.or(i32.eq(nextPlayerPos.realX,-1),i32.eq(nextPlayerPos.realX,X_CELLS))){
+	if bool.or(bool.or(i32.eq(nextPos.realY,-1),i32.eq(nextPos.realY,CELLS_Y)),bool.or(i32.eq(nextPos.realX,-1),i32.eq(nextPos.realX,CELLS_X))){
 		allowed = false
 		return allowed
 	}
@@ -445,26 +511,12 @@ func allowedToMove()(allowed bool){
 	return allowed
 }
 
-func switchBodyElements()(){
-	var i i32
-	var max i32 = i32.sub(player.size,1)
-	var tempCellArr [99]stuff.Cell = player.body
-	var pos stuff.Position2D
-	for i=max; i > 0; i--
-	{
-		var temp stuff.Cell
-		temp = tempCellArr[i]
-		tempCellArr[i] = tempCellArr[i32.sub(i,1)]
-		tempCellArr[i32.sub(i,1)] = temp
-	}
-	player.body = tempCellArr
-}
 
 func checkForFood()(){
-	var foodPos Position2D = food.position
-    var playerPos Position2D = player.position
-
-	if bool.and(i32.eq(foodPos.realX,playerPos.realX),i32.eq(foodPos.realY,playerPos.realY)){
+	var foodPos stuff.Position2D = food.position
+    var headPlayer stuff.Cell = player.head
+	var headPos stuff.Position2D = headPlayer.position
+	if bool.and(i32.eq(foodPos.realX,headPos.realX),i32.eq(foodPos.realY,headPos.realY)){
 		createFood()
 		addElementToBody()
 		player.score = i32.add(player.score,POINTSFORFOOD)
@@ -508,6 +560,7 @@ func main() {
 	restart = false
 	setupText()
     setupCellSpecs()
+	initTextures()
     initScene()
 
     glfw.SetKeyCallback("window","keyControl")
@@ -522,7 +575,7 @@ func main() {
 			checkForFood()
 			//check if the time has passed to move again
 			if f64.lt(SPEED,f64.sub(glfw.GetTime(),timer)){
-				movePlayer()
+			//	movePlayer()
 				timer = glfw.GetTime()
 			}
 		}else {

@@ -11,9 +11,9 @@ func newPosition2D (xPos f32, yPos f32,rxPos i32, ryPos i32) (position Position2
     var position Position2D
     position = Position2D {
         x : xPos,
-	y : yPos,
-	realX : rxPos,
-	realY : ryPos}
+		y : yPos,
+		realX : rxPos,
+		realY : ryPos}
     return position
 }
 
@@ -48,76 +48,44 @@ func (p Dimension2D) setYPosition (new_height f32) {
 }
 
 
-type Color struct {
-    red f32
-    green f32
-    blue f32
-}
-
-func newColor (r f32, g f32, b f32) (color Color) {
-    var color Color
-    color = Color {
-	red : r,
-	green : g,
-	blue : b }
-    return color
-}
-
-func (c Color) getRed(){
-    return c.red
-}
 type Cell struct {
     position Position2D
     dimension Dimension2D
-    color Color
+    texture i32
+	direction i32
+	lastDirection i32
+	rotation f32
+}
+
+func (c Cell) getPosition (pos Position2D) {
+	return c.position
 }
 
 
-func newCell (pos Position2D, dim Dimension2D, col Color) (cell Cell) {
+func newCell (pos Position2D, dim Dimension2D, tex i32) (cell Cell) {
     var cell Cell
     cell = Cell {
     	position: pos,
-	dimension: dim,
-	color: col}
+		dimension: dim,
+		texture: tex,
+		direction : 0,
+		lastDirection: 0,
+		rotation : 0.0}
 
     return cell
 }
 
-type Food struct {
-    position Position2D
-    dimension Dimension2D
-    color Color
-
-}
-
-func newFood (pos Position2D, dim Dimension2D, col Color) (food Food) {
-    var food Food
-    food = Food {
-		position: pos,
-		dimension: dim,
-		color: col}
-
-    return food
-}
-
 type Player struct{
-    position Position2D
-    dimension Dimension2D
-    color Color
-    direction i32
+	head Cell
     body [99]Cell
     size i32
 	score i32
 	alive bool
 }
 
-func newPlayer (pos Position2D, dim Dimension2D, col Color) (player Player) {
+func newPlayer () (player Player) {
     var player Player
     player = Player {
-    	position: pos,
-		dimension: dim,
-		color: col,
-		direction: 0,
 		size :0,
 		score : 0,
 		alive : true}
