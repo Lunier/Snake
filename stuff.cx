@@ -50,6 +50,7 @@ func (p Dimension2D) setYPosition (new_height f32) {
 
 type Cell struct {
     position Position2D
+	oldPosition Position2D
     dimension Dimension2D
     texture i32
 	direction i32
@@ -81,6 +82,7 @@ type Player struct{
     size i32
 	score i32
 	alive bool
+	angle f32
 }
 
 func newPlayer () (player Player) {
