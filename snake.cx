@@ -590,10 +590,10 @@ func main() {
     
 	var timer f64 = glfw.GetTime()
     for bool.not(glfw.ShouldClose("window")){
-
+		
 		gl.Clear(i32.bitor(gl.COLOR_BUFFER_BIT, gl.DEPTH_BUFFER_BIT))
     	gl.UseProgram(program)
-
+    	
 		if (player.alive == true){
 			renderScreen()
 			checkForFood()
